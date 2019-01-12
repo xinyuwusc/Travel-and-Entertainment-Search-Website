@@ -1,0 +1,52 @@
+/*/*CSS Ducument*/
+/*Date:2018-03-16;
+prupose:hw8 style.css*/
+
+.roll{overflow-x: auto;}
+.red{color:#FF1B1C;}
+.tophigh{margin-top:80px;}
+.btn-link:hover{text-decoration:none;}
+.bpointer{cursor:pointer; width:35px; height:35px; background-color:#fff; border:1px solid #D2D1D2; text-align:center;}
+.bpointer:hover{background-color:#E2E0E2; border:1px solid #C9C8C9;}
+.turnpage{cursor:pointer; width:100px; height:35px; background-color:#fff; border:1px solid #D2D1D2; text-align:center;}
+.listbtn{cursor:pointer; width:65px; height:35px; background-color:#fff; border:1px solid #D2D1D2; text-align:center;}
+.oneline{display:inline-block;}
+.starouter{position: relative; display:inline-block; width:66px;}
+.starinner{position: absolute; top:0px; left:0px; color:#E86C1B; overflow:hidden;}
+.detailright{float:right;}
+.topdown{margin-bottom:-1px;}
+.twstar{float:right;}
+.highlight{background-color:#fff;}
+.highlight:hover{background-color:#E2E0E2;}
+.yellowlight{background-color:#f9de9f;}
+.gettop{margin-top:31px;}
+.pegman{width:34px; height:34px; border:1px solid #D2D1D2; margin-bottom:5px;}
+#map{height:40vw;}
+.imgsize{width:35px; height:35px;}
+.star{color:#E86C1B;}
+.favor{float:right;}
+.btn-yellow{color:#E86C1B;}
+
+.animate-table{
+   transition:all linear 0.5s;  
+   position:relative;
+   right:0;
+   opacity:1;
+}
+.animate-table.ng-hide{
+  right:-100%;
+  opacity:0;
+}
+
+.animate-detail{
+   transition:all linear 0.5s;  
+   position:relative;
+   left:0;
+   opacity:1;
+}
+.animate-detail.ng-hide{
+  left:-100%;
+  opacity:0;
+}
+
+

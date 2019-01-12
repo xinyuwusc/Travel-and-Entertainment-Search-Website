@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<!-- Required meta tags -->
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+	<meta http-equiv="Access-Control-Allow-Origin" content="*">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<!-- Bootstrap CSS -->
+	<link rel="stylesheet" href="style.css" style="text/css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+	
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+	<title>Travel and Entertainment Search</title>
+	<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCakaKW2d0ilM98r8_hOzdQ6QtMzmsdX6k&libraries=places"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.20.1/moment.min.js"></script>
+
+	<script src="https://code.angularjs.org/1.6.9/angular.min.js"></script>
+	<script src="https://code.angularjs.org/1.6.9/angular-animate.min.js"></script>
+
+</head>
+<body ng-app="myApp" ng-controller="formControl">
+	<div class="container">
+		<div class="bg-light">
+			<form class="col-sm-11" ng-model="myForm" ng-submit="formSearch(); $event.preventDefault(); $event.stopPropagation()">		
+				<h3 class="text-center pt-3">Travel and Entertainment Search</h3>
+				<div class="form-group row">
+					<div class="col-sm-1"></div>
+					<label for="keywordID" class="col-sm-3 col-form-label">Keyword<b class="red">*</b></label>
+					<div class="col-sm-7">
+						<input class="form-control" id="keywordID" type="text" ng-model="keyword" ng-keyup="KeyUp()"> 
+						<p class="red" ng-init="warning=false" ng-show="warning">Please enter a keyword.</p>
+					</div>
+				</div>
+				<div class="form-group row">
+					<div class="col-sm-1"></div>
+					<label class="col-sm-3 col-form-label" for="categoryID">Category</label>
+					<div class="form-group col-sm-6">
+						<select ng-model="selectedcategory" ng-options="x for (x,y) in categories" ng-init="selectedcategory=categories.Default" id="categoryID" class="form-control">			
+						</select>
+					</div>					
+				</div>
+				<div class="form-group row">
+					<div class="col-sm-1"></div>
+					<label class="col-sm-3 col-form-label" for="distanceID">Distance(miles)</label>
+					<div class="col-sm-6">
+						<input ng-model="distance" type="text" class="form-control" id="distanceID" placeholder="10">
+					</div>
+				</div>
+				<fieldset class="form-group">
+					<div class="row">
+						<div class="col-sm-1"></div>
+						<label class="col-sm-3 col-form-label" for="radiocheck">From<b class="red">*</b></label>
+						<div class="col-sm-7" id="radiocheck">
+							<div class="form-check">							
+								<input type="radio" ng-model="myVar" value="optionone" ng-init="myVar='optionone'; switchhere=true" ng-checked="switchhere" ng-click="from()" class="form-check-input" id="gridRadio1">
+								<label class="form-check-label" for="gridRadio1">
+									Current location
+								</label>
+							</div>
+							<div class="form-check">
+								<input type="radio" ng-model="myVar" value="optiontwo" ng-click="from()" ng-checked="!switchhere" class="form-check-input" id="gridRadio2">
+								<label class="form-check-label" for="gridRadio2">
+									Other. Please sepcify:
+								</label>
+								<input ng-model="locationinput" ng-disabled="switchhere" class="form-control" type="text" id="autocomplete" placeholder="Enter a location" ng-focus="geolocate('autocomplete')" ng-keyup="PlaceKeyUp()">
+								<span class="red" ng-init="placewarn=false" ng-show="placewarn">Please enter a location.</span>
+							</div>						
+						</div>
+					</div>				
+				</fieldset>					
+				<div class="form-group row pb-4 col-sm-8">
+					<div class="col-sm-1"></div>	
+					<button class="btn btn-primary" ng-model="search" ng-init="switch=true" ng-disabled="switch" class="btn btn-primary icon-search" type="submit"><i class="fa fa-search"></i>Search</button>
+					<button class="btn btn-primary bg-white btn-outline-secondary text-dark" ng-click="formReset()" type="reset" name="clear" id="clearID">Clear</button>
+				</div>
+			</form>	
+		</div>
+		<div align="center">
+			<button type="button" class="{{rbtn}}" name="results" id="resultsID" ng-click="ResultsList()">Results</button>
+			<button class="{{fbtn}}" type="button" name="favorite" id="favoriteID" ng-click="FavoriteList()">Favorite</button>
+		</div>
+	    <div class="progress mt-5" ng-init="bar=false" ng-show="bar">
+    		<div class="progress-bar progress-bar-striped" style="width:50%"></div>
+  		</div>	    
+	</div>
+
+	<div class="card alert-danger tophigh" role="alert" ng-model="error" ng-init="error=false" ng-show="error">
+	    {{resultserror}}
+	</div>
+	<div class="card alert-warning tophigh" role="alert" ng-model="showempty" ng-init="showempty=false" ng-show="showempty">
+	    {{resultsempty}}
+	</div>
+	
+	<div class="container">		
+	    <!-- table	 -->
+	    <div class="animate-table" ng-model="tablelist" ng-init="tablelist=false" ng-hide="tablelist"> 
+	    <div ng-init="showtable=true" ng-hide="showtable">
+	    	<div>
+	    		<button class="btn btn-light highlight detailright" type="button" ng-init="detailswitch=true" ng-disabled="detailswitch" ng-click="DetailsToList()">Details<i class="fa fa-chevron-right ml-1"></i></button>
+	    	</div>
+	    	<br><br>   	
+	    	<div class="roll">
+	    		<table class="table" ng-init="searchtable=true" ng-hide="searchtable">
+		    		<tr>
+		    			<th>#</th>
+		    			<th>Category</th>
+		    			<th>Name</th>
+		    			<th>Address</th>
+		    			<th>Favorite</th>
+		    			<th>Details</th>
+		    		</tr>
+		    		<tr class="{{x.highlight}}" ng-repeat="x in nearbyresults track by $index">
+		    			<td>{{$index+1}}</td>
+		    			<td><img class="imgsize" src="{{x.icon}}" alt=""/></td>
+		    			<td>{{x.name}}</td>
+		    			<td>{{x.vicinity}}</td>
+		    			<td>
+		    				<div class="bpointer rounded pt-1" ng-click="LightStar($index)">
+		    					<i class="{{x.starstyle}}" ></i>
+		    				</div>
+		    			</td>
+		    			<td>
+		    				<div class="bpointer rounded pt-1" ng-click="RightDetails($index)">
+		    					<i class="fa fa-chevron-right"></i>
+		    				</div>
+		    			</td>
+		    		</tr>
+	    		</table>
+	    		<div class="d-flex justify-content-center">
+	    			<div class="turnpage rounded mr-3" ng-init="preswitch=false" ng-show="preswitch" ng-click="PreviousPage()"><p class="mt-1">Previous</p></div>
+	    			<div class="turnpage rounded" ng-init="nextswitch=false" ng-show="nextswitch" ng-click="NextPage()"><p class="mt-1">Next</p></div>
+	    		</div>
+	    		<div class="d-flex justify-content-center">
+	    			<div class="turnpage rounded mr-3" ng-init="favorpre=false" ng-show="favorpre" ng-click="FavorPre()"><p class="mt-1">Previous</p></div>
+	    			<div class="turnpage rounded" ng-init="favornext=false" ng-show="favornext" ng-click="FavorNext()"><p class="mt-1">Next</p></div>
+	    		</div>
+	    	</div>    	 
+	    </div>
+	    </div>	
+	        	    	    	    
+	    <!-- details -->
+	    <div class="animate-detail" ng-init="showdetails=true" ng-hide="showdetails">
+	    	<h5 class="text-center">{{titlename}}</h5>
+	    	<div class="listbtn rounded pt-1 oneline" ng-click="ListToDetails()">
+	    		<i class="fa fa-chevron-left mt-1 mr-1"></i><span>List</span>
+	    	</div>
+	    	<div class="row twstar">
+	    		<div class="bpointer oneline rounded pt-1 mr-1" ng-click="LightStarDetail()">
+	    			<i class="{{starstyle}}"></i>
+	    		</div>
+	    		<div class="oneline mr-3">
+	    			<a href="javascript:void(0)" id="twitter_url" ng-click="Mywindow()">
+	    				<img class="imgsize topdown" src="http://cs-server.usc.edu:45678/hw/hw8/images/Twitter.png" alt="">
+	    			</a>
+	    		</div>
+	    	</div>  				
+	    	<nav>
+	    		<div class="nav nav-tabs d-flex justify-content-end" id="nav-tab" role="tablist">
+	    			<a class="nav-item nav-link active" id="nav-info-tab" data-toggle="tab" href="#nav-info" role="tab" aria-controls="nav-info" aria-selected="true" ng-click="createInfo()">Info</a>
+	    			<a class="nav-item nav-link" id="nav-photos-tab" data-toggle="tab" href="#nav-photos" role="tab" aria-controls="nav-photos" aria-selected="false" ng-click="createPhotoMarker()">Photos</a>
+	    			<a class="nav-item nav-link" id="nav-maps-tab" data-toggle="tab" href="#nav-maps" role="tab" aria-controls="nav-maps" aria-selected="false" ng-click="createMaps()">Maps</a>
+	    			<a class="nav-item nav-link" id="nav-reviews-tab" data-toggle="tab" href="#nav-reviews" role="tab" aria-controls="nav-reviews" aria-selected="false" ng-click="createReviews()">Reviews</a>
+	    		</div>
+	    	</nav>
+	    	<div class="tab-content mt-3" id="nav-tabContent">
+	    		<div class="tab-pane fade show active" id="nav-info" role="tabpanel" aria-labelledby="nav-info-tab">
+	    			<div class="roll">
+	    				<div>
+	    					<table class="table table-striped">
+	    						<tr class="text-nowrap" ng-model="addressswitch" ng-init="addressswitch=false" ng-if="addressswitch">
+	    							<th>Address</th>
+	    							<td>{{formatted_address}}</td>
+	    						</tr>
+	    						<tr class="text-nowrap" ng-model="phoneswitch" ng-init="phoneswitch=false" ng-if="phoneswitch">
+	    							<th>Phone Number</th>
+	    							<td>{{phone_number}}</td>
+	    						</tr>
+	    						<tr class="text-nowrap" ng-model="levelswitch" ng-init="levelswitch=false" ng-if="levelswitch">
+	    							<th>Price Level</th>
+	    							<td>{{pricelevel}}</td>
+	    						</tr>
+	    						<tr class="text-nowrap" ng-model="ratingswitch" ng-init="ratingswitch=false" ng-if="ratingswitch">
+	    							<th>Rating</th>
+	    							<td class="row">
+	    								<div class="ml-3">{{rating}}</div>
+	    								<div class="starouter">
+	    									{{xingxing}}
+	    									<div class="starinner" style="width:{{the_width}}">{{xingxing}}</div>
+	    								</div>	    						
+	    							</td>
+	    						</tr>
+	    						<tr class="text-nowrap" ng-model="pageswitch" ng-init="pageswitch=false" ng-if="pageswitch">
+	    							<th>Google Page</th>
+	    							<td><a href="{{google_page}}" target="view_window">{{google_page}}</a></td>
+	    						</tr>
+	    						<tr ng-model="websiteswitch" ng-init="websiteswitch=false" ng-if="websiteswitch">
+	    							<th>Website</th>
+	    							<td class="col-sm-1"><a href="{{website}}" target="view_window">{{website}}</a></td>
+	    						</tr>
+	    						<tr class="text-nowrap" ng-model="hourswitch" ng-init="hourswitch=false" ng-if="hourswitch">
+	    							<th>Hours</th>
+	    							<td class="row">
+	    								<div class="mr-3">{{open_hour}}</div>
+	    								<div>
+	    									<a href="javascript:void(0);" data-toggle="modal" data-target="#exampleModal">Daily open hours</a>
+	    								</div>	    						   	
+	    							</td>
+	    						</tr>
+	    					</table>
+	    				</div>
+	    				<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+	    					<div class="modal-dialog" role="document">
+	    						<div class="modal-content">
+	    							<div class="modal-header">
+	    								<h5 class="modal-title" id="exampleModalLabel">Open hours</h5>
+	    								<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+	    									<span aria-hidden="true">&times;</span>
+	    								</button>
+	    							</div>
+	    							<div class="modal-body">
+	    								<table class="table">
+	    									<tr>
+	    										<th scope="col">{{dayfirstopen}}</th>
+	    										<th scope="col">{{dayfirsthour}}</th>
+	    									</tr>
+	    									<tr>
+	    										<th scope="col">{{localday[0]}}</th>
+	    										<th scope="col">{{localhour[0]}}</th>
+	    									</tr>
+	    									<tr>
+	    										<th scope="col">{{localday[1]}}</th>
+	    										<th scope="col">{{localhour[1]}}</th>
+	    									</tr>
+	    									<tr>
+	    										<th scope="col">{{localday[2]}}</th>
+	    										<th scope="col">{{localhour[2]}}</th>
+	    									</tr>
+	    									<tr>
+	    										<th scope="col">{{localday[3]}}</th>
+	    										<th scope="col">{{localhour[3]}}</th>
+	    									</tr>
+	    									<tr>
+	    										<th scope="col">{{localday[4]}}</th>
+	    										<th scope="col">{{localhour[4]}}</th>
+	    									</tr>
+	    									<tr>
+	    										<th scope="col">{{localday[5]}}</th>
+	    										<th scope="col">{{localhour[5]}}</th>
+	    									</tr>
+	    								</table>
+	    							</div>
+	    							<div class="modal-footer">
+	    								<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+	    							</div>
+	    						</div>
+	    					</div>
+	    				</div>
+	    			</div>			    			
+	    		</div>
+	    		<div class="tab-pane fade" id="nav-photos" role="tabpanel" aria-labelledby="nav-photos-tab" ng-model="showphoto" ng-init="showphoto=true" ng-show="showphoto">
+	    			<div class="row">
+	    				<div class="col-sm-3">
+	    					<div class="card" ng-repeat="pone in colone">
+	    						<a href="{{pone}}" target="_blank"><img class="card-img" src="{{pone}}" alt=""></a>	    					
+	    					</div>
+	    				</div>
+	    				<div class="col-sm-3">
+	    					<div class="card" ng-repeat="ptwo in coltwo">
+	    						<a href="{{ptwo}}" target="_blank"><img class="card-img" src="{{ptwo}}" alt=""></a>	    					
+	    					</div>
+	    				</div>	    				
+	    				<div class="col-sm-3">
+	    					<div class="card" ng-repeat="pthree in colthree">
+	    						<a href="{{pthree}}" target="_blank"><img class="card-img" src="{{pthree}}" alt=""></a>	    			
+	    					</div>
+	    				</div>
+	    				<div class="col-sm-3">
+	    					<div class="card" ng-repeat="pfour in colfour">
+	    						<a href="{{pfour}}" target="_blank"><img class="card-img" src="{{pfour}}" alt=""></a>	    					
+	    					</div>
+	    				</div>	    					    				
+	    			</div>	    			
+	    		</div>
+	    		<div class="form-group alert-warning" role="alert" ng-model="showphotoempty" ng-init="showphotoempty=false" ng-show="showphotoempty">{{photoempty}}</div>
+	    		<div class="tab-pane fade" id="nav-maps" role="tabpanel" aria-labelledby="nav-maps-tab">
+	    			<div class="form-row">
+	    				<div class="form-group col-sm-4">
+	    					<label for="inputFrom">From</label>
+	    					<input ng-model="inputfrom" type="text" class="form-control" id="inputFrom" ng-focus="geolocate('inputFrom')" ng-keyup="KeyUpdir()">
+	    				</div>
+	    				<div class="form-group col-sm-4">
+	    					<label for="inputTo">To</label>
+	    					<input ng-model="inputto" type="text" class="form-control" id="inputTo" readonly>
+	    				</div>
+	    				<div class="form-group col-sm-2">
+	    					<label for="inputMode">Travel Mode</label>
+	    					<select ng-model="inputmode" ng-options="x for (x,y) in modes" id="inputMode" ng-init="inputmode=modes.Driving" class="form-control"></select>
+	    				</div>
+	    				<div class="col-sm-2">
+      						<button type="button" class="btn btn-primary gettop" ng-model="getdir" ng-init="getdir=false" ng-disabled="getdir" ng-click="GetDirection()">Get Directions</button>
+    					</div>
+	    			</div>
+	    			<div class="pegman" ng-model="streetswitch" ng-init="streetswitch='pegman'; mapimg='http://cs-server.usc.edu:45678/hw/hw8/images/Pegman.png'" ng-click="StreetView()">
+	    				<img class="pegman" ng-src="{{mapimg}}" alt="">
+	    			</div>	
+	   				<div class="form-group" ng-model="detailstable" id="map"></div>
+	   				<div class="form-group" id="right-panel"></div>
+	    		</div>
+	    		<div class="tab-pane fade" id="nav-reviews" role="tabpanel" aria-labelledby="nav-reviews-tab">
+	    			<div class="form-group">
+	    				<div class="btn-group" role="group">
+	    				    <button ng-model="reviewtype" ng-init="reviewtype='Google Reviews'" id="btnGroupDrop1" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{reviewtype}}
+	    				    </button>
+	    				    <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="GoogleReviews()">Google Reviews</a>
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="YelpReviews()">Yelp Reviews</a>
+	    				    </div>
+	    				</div>
+	    				<div class="btn-group" role="group">
+	    				    <button ng-model="orderlist" ng-init="orderlist='Default Order'" id="btnGroupDrop2" type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{orderlist}}
+	    				    </button>
+	    				    <div class="dropdown-menu" aria-labelledby="btnGroupDrop2">
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="DefaultOrder()">Default Order</a>
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="HRating()">Highest Rating</a>
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="LRating()">Lowest Rating</a>
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="MostRecent()">Most Recent</a>
+	    				    	<a class="dropdown-item" href="javascript:void(0);" ng-click="LeastRecent()">Least Recent</a>
+	    				    </div>
+	    				</div>
+	    			</div>	    			
+	    			<ul class="list-unstyled" ng-model="showreview" ng-init="showreview=true" ng-show="showreview">
+	    				<div class="card mt-2" ng-model="ordertype" ng-init="ordertype='index'" ng-repeat="x in reviewslist | orderBy: ordertype " >
+	    					<li class="media mx-3 my-3">
+	    						<a href="{{x.author_url}}" target="_blank"><img class="mr-3 imgsize rounded-circle" src="{{x.profile_photo_url}}" alt=""></a>
+	    						<div class="media-body">
+	    							<a href="{{x.author_url}}" target="_blank">{{x.author_name}}</a>
+	    							<div class="row ml-1">
+	    								<div class="star">{{x.star}}</div>
+	    								<div>{{x.detailtime}}</div>
+	    							</div>
+	    							<div>{{x.text}}</div>
+	    						</div>
+	    					</li>
+	    				</div>	
+	    			</ul>	
+	    			
+	    			<div class="card mt-2 alert-warning" role="alert" ng-model="showreviewempty" ng-init="showreviewempty=false" ng-show="showreviewempty">{{emptyreview}}</div>    				
+	    		</div>
+	    	</div>   	    	
+	    </div>	
+	        
+	</div>
+
+<script src="angularjs.js"></script>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "xinyu wang",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "*",
+    "cors": "^2.8.4",
+    "express": "*",
+    "http": "*",
+    "nodemon": "^1.17.3",
+    "path": "^0.12.7",
+    "request": "^2.85.0",
+    "url": "*",
+    "util": "*",
+    "yelp-fusion": "^2.0.3"
+  }
+}
